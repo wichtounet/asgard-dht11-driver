@@ -82,11 +82,11 @@ void read_data(int socket_fd, int temperature_sensor, int humidity_sensor){
      */
     if (j >= 40 && dht11_dat[4] == ((dht11_dat[0] + dht11_dat[1] + dht11_dat[2] + dht11_dat[3]) & 0xFF)){
         //Send the humidity to the server
-        auto nbytes = snprintf(write_buffer, 4096, "DATA HUMIDITY %d", dht11_dat[0]);
+        auto nbytes = snprintf(write_buffer, 4096, "DATA %d %d", humidity_sensor, dht11_dat[0]);
         write(socket_fd, write_buffer, nbytes);
 
         //Send the temperature to the server
-        nbytes = snprintf(write_buffer, 4096, "DATA TEMPERATURE %d", dht11_dat[2]);
+        nbytes = snprintf(write_buffer, 4096, "DATA TEMPERATURE %d %d", temperature_sensor, dht11_dat[2]);
         write(socket_fd, write_buffer, nbytes);
     }
 }
