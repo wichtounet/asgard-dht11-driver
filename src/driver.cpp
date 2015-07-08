@@ -75,7 +75,7 @@ void read_data(){
     /*
      * check we read 40 bits (8bit x 5 ) + verify checksum in the last byte
      */
-    if (j >= 40 && dht11_dat[4] == (dht11_dat[0] + dht11_dat[1] + dht11_dat[2] + dht11_dat[3]) & 0xFF){
+    if (j >= 40 && dht11_dat[4] == ((dht11_dat[0] + dht11_dat[1] + dht11_dat[2] + dht11_dat[3]) & 0xFF)){
         printf("Humidity = %d.%d %% Temperature = %d.%d\n", dht11_dat[0], dht11_dat[1], dht11_dat[2], dht11_dat[3]);
     }
 }
