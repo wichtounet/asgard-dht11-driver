@@ -24,9 +24,6 @@ namespace {
 //Buffer
 char buffer[4096];
 
-void ir_received(int socket_fd, char* raw_code){
-}
-
 const std::size_t UNIX_PATH_MAX = 108;
 const std::size_t gpio_pin = 24;
 const std::size_t max_timings = 85;
@@ -88,7 +85,7 @@ void read_data(int socket_fd){
         write(socket_fd, buffer, nbytes);
 
         //Send the temperature to the server
-        auto nbytes = snprintf(buffer, 4096, "DATA TEMPERATURE %d.%d", dht11_dat[2], dht11_dat[3]);
+        nbytes = snprintf(buffer, 4096, "DATA TEMPERATURE %d.%d", dht11_dat[2], dht11_dat[3]);
         write(socket_fd, buffer, nbytes);
     }
 }
