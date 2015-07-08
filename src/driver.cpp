@@ -20,7 +20,7 @@
 #include<signal.h>
 
 #define MAXTIMINGS  85
-#define DHTPIN      2
+#define DHTPIN      24
 
 namespace {
 
