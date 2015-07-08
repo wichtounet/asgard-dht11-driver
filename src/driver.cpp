@@ -155,7 +155,7 @@ int main(){
 
     receive_buffer[nbytes] = 0;
 
-    int tempeature_sensor = atoi(receive_buffer);
+    int temperature_sensor = atoi(receive_buffer);
 
     std::cout << "Temperature sensor: " << temperature_sensor << std::endl;
 
