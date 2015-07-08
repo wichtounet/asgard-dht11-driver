@@ -143,7 +143,7 @@ int main(){
         return 1;
     }
 
-    auto nbytes = snprintf(write_buffer, 4096, "REGISTER TEMPERATURE Local");
+    auto nbytes = snprintf(write_buffer, 4096, "REG_SENSOR TEMPERATURE Local");
     write(socket_fd, write_buffer, nbytes);
 
     nbytes = read(socket_fd, receive_buffer, 4096);
@@ -159,7 +159,7 @@ int main(){
 
     std::cout << "Temperature sensor: " << temperature_sensor << std::endl;
 
-    nbytes = snprintf(write_buffer, 4096, "REGISTER HUMIDITY Local");
+    nbytes = snprintf(write_buffer, 4096, "REG_SENSOR HUMIDITY Local");
     write(socket_fd, write_buffer, nbytes);
 
     nbytes = read(socket_fd, receive_buffer, 4096);
