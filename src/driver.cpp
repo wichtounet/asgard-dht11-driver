@@ -44,7 +44,7 @@ void read_data(){
     pinMode(gpio_pin, INPUT);
 
     /* detect change and read data */
-    uint8_t j = 0
+    uint8_t j = 0;
     for(uint8_t i = 0; i < max_timings; i++){
         uint8_t counter = 0;
         while (digitalRead(gpio_pin) == laststate){
