@@ -30,7 +30,6 @@ void read_data(){
     uint8_t laststate   = HIGH;
     uint8_t counter     = 0;
     uint8_t j       = 0, i;
-    float   f; /* fahrenheit */
 
     dht11_dat[0] = dht11_dat[1] = dht11_dat[2] = dht11_dat[3] = dht11_dat[4] = 0;
 
@@ -78,9 +77,8 @@ void read_data(){
      * print it out if data is good
      */
     if ( (j >= 40) && (dht11_dat[4] == ( (dht11_dat[0] + dht11_dat[1] + dht11_dat[2] + dht11_dat[3]) & 0xFF) ) ){
-        f = dht11_dat[2] * 9. / 5. + 32;
-        printf( "Humidity = %d.%d %% Temperature = %d.%d *C (%.1f *F)\n",
-            dht11_dat[0], dht11_dat[1], dht11_dat[2], dht11_dat[3], f );
+        printf( "Humidity = %d.%d %% Temperature = %d.%d\n",
+            dht11_dat[0], dht11_dat[1], dht11_dat[2], dht11_dat[3]);
     } else {
         printf( "Data not good, skip\n" );
     }
