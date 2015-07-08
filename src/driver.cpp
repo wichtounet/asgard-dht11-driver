@@ -10,6 +10,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
+#include<sys/socket.h>
+#include<sys/un.h>
+#include<sys/types.h>
+#include<unistd.h>
+#include<signal.h>
 
 #define MAXTIMINGS  85
 #define DHTPIN      2
