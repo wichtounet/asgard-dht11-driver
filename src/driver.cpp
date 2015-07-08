@@ -12,7 +12,7 @@
 #include <stdint.h>
 
 #define MAXTIMINGS  85
-#define DHTPIN      7
+#define DHTPIN      0
 
 namespace {
 
