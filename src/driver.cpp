@@ -21,8 +21,9 @@
 
 namespace {
 
-//Buffer
-char buffer[4096];
+//Buffers
+char write_buffer[4096];
+char receive_buffer[4096];
 
 const std::size_t UNIX_PATH_MAX = 108;
 const std::size_t gpio_pin = 24;
@@ -30,7 +31,7 @@ const std::size_t max_timings = 85;
 
 int dht11_dat[5] = { 0, 0, 0, 0, 0 };
 
-void read_data(int socket_fd){
+void read_data(int socket_fd, int temperature_sensor, int humidity_sensor){
     uint8_t laststate   = HIGH;
 
     dht11_dat[0] = dht11_dat[1] = dht11_dat[2] = dht11_dat[3] = dht11_dat[4] = 0;
@@ -81,12 +82,12 @@ void read_data(int socket_fd){
      */
     if (j >= 40 && dht11_dat[4] == ((dht11_dat[0] + dht11_dat[1] + dht11_dat[2] + dht11_dat[3]) & 0xFF)){
         //Send the humidity to the server
-        auto nbytes = snprintf(buffer, 4096, "DATA HUMIDITY %d.%d", dht11_dat[0], dht11_dat[1]);
-        write(socket_fd, buffer, nbytes);
+        auto nbytes = snprintf(write_buffer, 4096, "DATA HUMIDITY %d", dht11_dat[0]);
+        write(socket_fd, write_buffer, nbytes);
 
         //Send the temperature to the server
-        nbytes = snprintf(buffer, 4096, "DATA TEMPERATURE %d.%d", dht11_dat[2], dht11_dat[3]);
-        write(socket_fd, buffer, nbytes);
+        nbytes = snprintf(write_buffer, 4096, "DATA TEMPERATURE %d", dht11_dat[2]);
+        write(socket_fd, write_buffer, nbytes);
     }
 }
 
@@ -142,9 +143,41 @@ int main(){
         return 1;
     }
 
+    auto nbytes = snprintf(write_buffer, 4096, "REGISTER TEMPERATURE Local");
+    write(socket_fd, write_buffer, nbytes);
+
+    nbytes = read(socket_fd, receive_buffer, 4096);
+
+    if(!nbytes){
+        std::cout << "asgard:dht11: failed to register sensor" << std::endl;
+        return 1;
+    }
+
+    receive_buffer[nbytes] = 0;
+
+    int tempeature_sensor = atoi(receive_buffer);
+
+    std::cout << "Temperature sensor: " << temperature_sensor << std::endl;
+
+    nbytes = snprintf(write_buffer, 4096, "REGISTER HUMIDITY Local");
+    write(socket_fd, write_buffer, nbytes);
+
+    nbytes = read(socket_fd, receive_buffer, 4096);
+
+    if(!nbytes){
+        std::cout << "asgard:dht11: failed to register sensor" << std::endl;
+        return 1;
+    }
+
+    receive_buffer[nbytes] = 0;
+
+    int humidity_sensor = atoi(receive_buffer);
+
+    std::cout << "Humidity sensor: " << humidity_sensor << std::endl;
+
     //Read data continuously
     while (1){
-        read_data(socket_fd);
+        read_data(socket_fd, temperature_sensor, humidity_sensor);
         delay(1000);
     }
 
