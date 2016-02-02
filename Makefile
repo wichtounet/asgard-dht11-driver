@@ -1,7 +1,7 @@
 user=pi
 pi=192.168.20.161
 password=raspberry
-dir=/home/${user}/asgard/asgard-server/
+dir=/home/${user}/asgard/asgard-dht11-driver/
 
 default: release
 
@@ -24,6 +24,9 @@ all: release release_debug debug
 
 run: release
 	sudo ./release/bin/dht11_driver
+
+remote_clean:
+	sshpass -p ${password} ssh ${user}@${pi} "cd ${dir} && make clean"
 
 remote_make:
 	sshpass -p ${password} scp Makefile ${user}@${pi}:${dir}/
