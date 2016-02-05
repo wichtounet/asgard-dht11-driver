@@ -86,7 +86,7 @@ void read_data(int socket_fd, int temperature_sensor, int humidity_sensor){
         write(socket_fd, write_buffer, nbytes);
 
         //Send the temperature to the server
-        nbytes = snprintf(write_buffer, 4096, "DATA TEMPERATURE %d %d", temperature_sensor, dht11_dat[2]);
+        nbytes = snprintf(write_buffer, 4096, "DATA %d %d", temperature_sensor, dht11_dat[2]);
         write(socket_fd, write_buffer, nbytes);
     }
 }
@@ -178,7 +178,7 @@ int main(){
     //Read data continuously
     while (1){
         read_data(socket_fd, temperature_sensor, humidity_sensor);
-        delay(1000);
+        delay(30000);
     }
 
     //Close the socket
