@@ -21,20 +21,70 @@
 
 namespace {
 
-//Buffers
-char write_buffer[4096];
-char receive_buffer[4096];
-
 const std::size_t UNIX_PATH_MAX = 108;
 const std::size_t gpio_pin = 24;
 const std::size_t max_timings = 85;
+const std::size_t buffer_size = 4096;
 
-int dht11_dat[5] = { 0, 0, 0, 0, 0 };
+// Configuration (this should be in a configuration file)
+const char* server_socket_path = "/tmp/asgard_socket";
+const char* client_socket_path = "/tmp/asgard_dht11_socket";
+const std::size_t delay_ms = 20000;
 
-void read_data(int socket_fd, int temperature_sensor, int humidity_sensor){
+//Buffers
+char write_buffer[buffer_size + 1];
+char receive_buffer[buffer_size + 1];
+
+// The socket file descriptor
+int socket_fd;
+
+// The socket addresses
+struct sockaddr_un client_address;
+struct sockaddr_un server_address;
+
+// The remote IDs
+int source_id = -1;
+int temperature_sensor_id = -1;
+int humidity_sensor_id = -1;
+
+void stop(){
+    std::cout << "asgard:dht11: stop the driver" << std::endl;
+
+    // Unregister the temperature sensor, if necessary
+    if(temperature_sensor_id >= 0){
+        auto nbytes = snprintf(write_buffer, buffer_size, "UNREG_SENSOR %d %d", source_id, temperature_sensor_id);
+        sendto(socket_fd, write_buffer, nbytes, 0, (struct sockaddr *) &server_address, sizeof(struct sockaddr_un));
+    }
+
+    // Unregister the humidity sensor, if necessary
+    if(temperature_sensor_id >= 0){
+        auto nbytes = snprintf(write_buffer, buffer_size, "UNREG_SENSOR %d %d", source_id, humidity_sensor_id);
+        sendto(socket_fd, write_buffer, nbytes, 0, (struct sockaddr *) &server_address, sizeof(struct sockaddr_un));
+    }
+
+    // Unregister the source, if necessary
+    if(source_id >= 0){
+        auto nbytes = snprintf(write_buffer, buffer_size, "UNREG_SOURCE %d", source_id);
+        sendto(socket_fd, write_buffer, nbytes, 0, (struct sockaddr *) &server_address, sizeof(struct sockaddr_un));
+    }
+
+    // Unlink the client socket
+    unlink(client_socket_path);
+
+    // Close the socket
+    close(socket_fd);
+}
+
+void terminate(int){
+    stop();
+
+    std::exit(0);
+}
+
+void read_data(){
     uint8_t laststate   = HIGH;
 
-    dht11_dat[0] = dht11_dat[1] = dht11_dat[2] = dht11_dat[3] = dht11_dat[4] = 0;
+    int dht11_dat[5] = { 0, 0, 0, 0, 0 };
 
     /* pull pin down for 18 milliseconds */
     pinMode(gpio_pin, OUTPUT);
@@ -82,12 +132,13 @@ void read_data(int socket_fd, int temperature_sensor, int humidity_sensor){
      */
     if (j >= 40 && dht11_dat[4] == ((dht11_dat[0] + dht11_dat[1] + dht11_dat[2] + dht11_dat[3]) & 0xFF)){
         //Send the humidity to the server
-        auto nbytes = snprintf(write_buffer, 4096, "DATA %d %d", humidity_sensor, dht11_dat[0]);
-        write(socket_fd, write_buffer, nbytes);
+        auto nbytes = snprintf(write_buffer, buffer_size, "DATA %d %d %d", source_id, humidity_sensor_id, dht11_dat[0]);
+        sendto(socket_fd, write_buffer, nbytes, 0, (struct sockaddr *) &server_address, sizeof(struct sockaddr_un));
+
 
         //Send the temperature to the server
-        nbytes = snprintf(write_buffer, 4096, "DATA %d %d", temperature_sensor, dht11_dat[2]);
-        write(socket_fd, write_buffer, nbytes);
+        nbytes = snprintf(write_buffer, buffer_size, "DATA %d %d %d", source_id, humidity_sensor_id, dht11_dat[2]);
+        sendto(socket_fd, write_buffer, nbytes, 0, (struct sockaddr *) &server_address, sizeof(struct sockaddr_un));
     }
 }
 
@@ -124,65 +175,78 @@ int main(){
        return 1;
     }
 
-    //Open the socket
-    auto socket_fd = socket(PF_UNIX, SOCK_STREAM, 0);
+    // Open the socket
+    socket_fd = socket(AF_UNIX, SOCK_DGRAM, 0);
     if(socket_fd < 0){
-        std::cout << "asgard:dht11: socket() failed" << std::endl;
+        std::cerr << "asgard:dht11: socket() failed" << std::endl;
         return 1;
     }
 
-    //Init the address
-    struct sockaddr_un address;
-    memset(&address, 0, sizeof(struct sockaddr_un));
-    address.sun_family = AF_UNIX;
-    snprintf(address.sun_path, UNIX_PATH_MAX, "/tmp/asgard_socket");
+    // Init the client address
+    memset(&client_address, 0, sizeof(struct sockaddr_un));
+    client_address.sun_family = AF_UNIX;
+    snprintf(client_address.sun_path, UNIX_PATH_MAX, client_socket_path);
 
-    //Connect to the server
-    if(connect(socket_fd, (struct sockaddr *) &address, sizeof(struct sockaddr_un)) != 0){
-        std::cout << "asgard:dht11: connect() failed" << std::endl;
+    // Unlink the client socket
+    unlink(client_socket_path);
+
+    // Bind to client socket
+    if(bind(socket_fd, (const struct sockaddr *) &client_address, sizeof(struct sockaddr_un)) < 0){
+        std::cerr << "asgard:dht11: bind() failed" << std::endl;
         return 1;
     }
 
-    auto nbytes = snprintf(write_buffer, 4096, "REG_SENSOR TEMPERATURE Local");
-    write(socket_fd, write_buffer, nbytes);
+    //Register signals for "proper" shutdown
+    signal(SIGTERM, terminate);
+    signal(SIGINT, terminate);
 
-    nbytes = read(socket_fd, receive_buffer, 4096);
+    // Init the server address
+    memset(&server_address, 0, sizeof(struct sockaddr_un));
+    server_address.sun_family = AF_UNIX;
+    snprintf(server_address.sun_path, UNIX_PATH_MAX, server_socket_path);
 
-    if(!nbytes){
-        std::cout << "asgard:dht11: failed to register sensor" << std::endl;
-        return 1;
-    }
+    socklen_t address_length = sizeof(struct sockaddr_un);
 
-    receive_buffer[nbytes] = 0;
+    // Register the source
+    auto nbytes = snprintf(write_buffer, buffer_size, "REG_SOURCE dht11");
+    sendto(socket_fd, write_buffer, nbytes, 0, (struct sockaddr *) &server_address, sizeof(struct sockaddr_un));
 
-    int temperature_sensor = atoi(receive_buffer);
+    auto bytes_received = recvfrom(socket_fd, receive_buffer, buffer_size, 0, (struct sockaddr *) &(server_address), &address_length);
+    receive_buffer[bytes_received] = '\0';
 
-    std::cout << "Temperature sensor: " << temperature_sensor << std::endl;
+    source_id = atoi(receive_buffer);
 
-    nbytes = snprintf(write_buffer, 4096, "REG_SENSOR HUMIDITY Local");
-    write(socket_fd, write_buffer, nbytes);
+    std::cout << "asgard:dht11: remote source: " << source_id << std::endl;
 
-    nbytes = read(socket_fd, receive_buffer, 4096);
+    // Register the temperature sensor
+    nbytes = snprintf(write_buffer, buffer_size, "REG_SENSOR %d %s %s", source_id, "TEMPERATURE", "local");
+    sendto(socket_fd, write_buffer, nbytes, 0, (struct sockaddr *) &server_address, sizeof(struct sockaddr_un));
 
-    if(!nbytes){
-        std::cout << "asgard:dht11: failed to register sensor" << std::endl;
-        return 1;
-    }
+    bytes_received = recvfrom(socket_fd, receive_buffer, buffer_size, 0, (struct sockaddr *) &(server_address), &address_length);
+    receive_buffer[bytes_received] = '\0';
 
-    receive_buffer[nbytes] = 0;
+    temperature_sensor_id = atoi(receive_buffer);
 
-    int humidity_sensor = atoi(receive_buffer);
+    std::cout << "asgard:random: remote temperature sensor: " << temperature_sensor_id << std::endl;
 
-    std::cout << "Humidity sensor: " << humidity_sensor << std::endl;
+    // Register the humidity sensor
+    nbytes = snprintf(write_buffer, buffer_size, "REG_SENSOR %d %s %s", source_id, "HUMIDITY", "local");
+    sendto(socket_fd, write_buffer, nbytes, 0, (struct sockaddr *) &server_address, sizeof(struct sockaddr_un));
+
+    bytes_received = recvfrom(socket_fd, receive_buffer, buffer_size, 0, (struct sockaddr *) &(server_address), &address_length);
+    receive_buffer[bytes_received] = '\0';
+
+    humidity_sensor_id = atoi(receive_buffer);
+
+    std::cout << "asgard:random: remote humidity sensor: " << humidity_sensor_id << std::endl;
 
     //Read data continuously
     while (1){
-        read_data(socket_fd, temperature_sensor, humidity_sensor);
-        delay(30000);
+        read_data();
+        delay(delay_ms);
     }
 
-    //Close the socket
-    close(socket_fd);
+    stop();
 
     return 0;
 }
