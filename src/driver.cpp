@@ -226,7 +226,7 @@ int main(){
 
     temperature_sensor_id = atoi(receive_buffer);
 
-    std::cout << "asgard:random: remote temperature sensor: " << temperature_sensor_id << std::endl;
+    std::cout << "asgard:dht11: remote temperature sensor: " << temperature_sensor_id << std::endl;
 
     // Register the humidity sensor
     nbytes = snprintf(write_buffer, buffer_size, "REG_SENSOR %d %s %s", source_id, "HUMIDITY", "local");
@@ -237,7 +237,7 @@ int main(){
 
     humidity_sensor_id = atoi(receive_buffer);
 
-    std::cout << "asgard:random: remote humidity sensor: " << humidity_sensor_id << std::endl;
+    std::cout << "asgard:dht11: remote humidity sensor: " << humidity_sensor_id << std::endl;
 
     //Read data continuously
     while (1){
