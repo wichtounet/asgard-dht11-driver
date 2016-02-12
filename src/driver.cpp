@@ -135,7 +135,6 @@ void read_data(){
         auto nbytes = snprintf(write_buffer, buffer_size, "DATA %d %d %d", source_id, humidity_sensor_id, dht11_dat[0]);
         sendto(socket_fd, write_buffer, nbytes, 0, (struct sockaddr *) &server_address, sizeof(struct sockaddr_un));
 
-
         //Send the temperature to the server
         nbytes = snprintf(write_buffer, buffer_size, "DATA %d %d %d", source_id, temperature_sensor_id, dht11_dat[2]);
         sendto(socket_fd, write_buffer, nbytes, 0, (struct sockaddr *) &server_address, sizeof(struct sockaddr_un));
