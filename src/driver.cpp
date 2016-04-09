@@ -37,7 +37,7 @@ void stop(){
     unlink(client_socket_path);
 
     // Close the socket
-    close(socket_fd);
+    close(driver.socket_fd);
 }
 
 void terminate(int){
@@ -96,8 +96,8 @@ void read_data(){
      * check we read 40 bits (8bit x 5 ) + verify checksum in the last byte
      */
     if (j >= 40 && dht11_dat[4] == ((dht11_dat[0] + dht11_dat[1] + dht11_dat[2] + dht11_dat[3]) & 0xFF)){
-        asgard::send_data(driver, source_id, humidity_sensor_id, dht11_data[0]);
-        asgard::send_data(driver, source_id, temperature_sensor_id, dht11_data[2]);
+        asgard::send_data(driver, source_id, humidity_sensor_id, dht11_dat[0]);
+        asgard::send_data(driver, source_id, temperature_sensor_id, dht11_dat[2]);
     }
 }
 
