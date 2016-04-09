@@ -12,13 +12,13 @@ pi.conf:
 	echo "user=pi" > pi.conf
 	echo "pi=192.168.20.161" >> pi.conf
 	echo "password=raspberry" >> pi.conf
-	echo "dir=/home/pi/asgard/asgard-dth11-driver/" >> pi.conf
+	echo "dir=/home/pi/asgard/asgard-dht11-driver/" >> pi.conf
 
 conf: pi.conf
 
 include pi.conf
 
-CXX_FLAGS += -pedantic
+CXX_FLAGS += -pedantic -Iasgard-lib/include/
 LD_FLAGS  += -lwiringPi -pthread
 
 $(eval $(call auto_folder_compile,src))
