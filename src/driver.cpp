@@ -29,7 +29,7 @@ const std::size_t buffer_size = 4096;
 // Configuration (this should be in a configuration file)
 const char* server_socket_path = "/tmp/asgard_socket";
 const char* client_socket_path = "/tmp/asgard_dht11_socket";
-const std::size_t delay_ms = 20000;
+const std::size_t delay_ms = 60000;
 
 //Buffers
 char write_buffer[buffer_size + 1];
