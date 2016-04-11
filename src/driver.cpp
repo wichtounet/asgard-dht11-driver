@@ -14,13 +14,9 @@ namespace {
 // Configuration (this should be in a configuration file)
 const char* server_socket_path = "/tmp/asgard_socket";
 const char* client_socket_path = "/tmp/asgard_dht11_socket";
-<<<<<<< HEAD
 const std::size_t delay_ms = 60000;
-=======
-const std::size_t delay_ms = 20000;
 const std::size_t gpio_pin = 24;
 const std::size_t max_timings = 85;
->>>>>>> upstream/master
 
 // The driver connection
 asgard::driver_connector driver;
