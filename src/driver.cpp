@@ -11,11 +11,8 @@
 
 namespace {
 
-// Configuration (this should be in a configuration file)
-const char* server_socket_path = "/tmp/asgard_socket";
-const char* client_socket_path = "/tmp/asgard_dht11_socket";
-const std::size_t delay_ms = 20000;
-const std::size_t gpio_pin = 24;
+// Configuration
+std::vector<asgard::KeyValue> config;
 const std::size_t max_timings = 85;
 
 // The driver connection
@@ -34,7 +31,7 @@ void stop(){
     asgard::unregister_source(driver, source_id);
 
     // Unlink the client socket
-    unlink(client_socket_path);
+    unlink(asgard::get_string_value(config, "dht11_client_socket_path").c_str());
 
     // Close the socket
     close(driver.socket_fd);
@@ -47,9 +44,11 @@ void terminate(int){
 }
 
 void read_data(){
-    uint8_t laststate   = HIGH;
+    uint8_t laststate = HIGH;
 
     int dht11_dat[5] = { 0, 0, 0, 0, 0 };
+
+    const std::size_t gpio_pin = asgard::get_int_value(config, "dht11_gpio_pin");
 
     /* pull pin down for 18 milliseconds */
     pinMode(gpio_pin, OUTPUT);
@@ -113,8 +112,11 @@ int main(){
        return 1;
     }
 
+    // Load the configuration file
+    asgard::load_config(config);
+
     // Open the connection
-    if(!asgard::open_driver_connection(driver, client_socket_path, server_socket_path)){
+    if(!asgard::open_driver_connection(driver, asgard::get_string_value(config, "server_socket_addr").c_str(), asgard::get_int_value(config, "server_socket_port"))){
         return 1;
     }
 
@@ -130,7 +132,7 @@ int main(){
     //Read data continuously
     while (1){
         read_data();
-        delay(delay_ms);
+        delay(asgard::get_int_value(config, "dht11_delay_ms"));
     }
 
     stop();
