@@ -13,6 +13,7 @@ namespace {
 
 // Configuration
 std::vector<asgard::KeyValue> config;
+
 const std::size_t max_timings = 85;
 
 // The driver connection
@@ -29,9 +30,6 @@ void stop(){
     asgard::unregister_sensor(driver, source_id, temperature_sensor_id);
     asgard::unregister_sensor(driver, source_id, humidity_sensor_id);
     asgard::unregister_source(driver, source_id);
-
-    // Unlink the client socket
-    unlink(asgard::get_string_value(config, "dht11_client_socket_path").c_str());
 
     // Close the socket
     close(driver.socket_fd);
